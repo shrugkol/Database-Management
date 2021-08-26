@@ -1,0 +1,207 @@
+--1.We would like summary information listing in one row the total number of content creators that exist, 
+--the minimum video length, the maximum video length, and the maximum views on a video.
+--Use appropriate column aliases. 
+
+SELECT
+(SELECT COUNT(*)  
+From content_creators) AS total_content_creators,
+(SELECT MIN(video_length)
+From video) AS Minimum_video_length,
+(SELECT MAX(video_length)
+From video) AS Maximum_video_length,
+(SELECT MAX(views)
+From video) AS Maximum_views
+FROM DUAL;
+
+
+--2.What is the number of user comments and most recent date of comment activity for each video (show video title)? 
+--Please use table and column aliases. Sort results from oldest to newest comments
+
+SELECT  v.title, 
+        SUM(c.comment_id) AS Number_of_user_comments,Max(time_date) AS Most_Recent_comment_DATE
+FROM comments c JOIN video v ON c.video_id = v.video_id
+GROUP BY v.title;
+
+--3.Write a query that shows us the number of content creators in each city, 
+--along with the average number of likes for videos from each city. 
+--Show the city with the highest number of average video likes first. 
+
+SELECT cc.city, COUNT(distinct cc.cc_id)as total__content_creators_per_city, ROUND(AVG(likes),2) AS "Average_likes"
+FROM content_creators cc left JOIN video v ON v.cc_id= cc.cc_id 
+GROUP BY cc.city
+ORDER BY CASE WHEN AVG(likes) IS NULL THEN 1 ELSE 0 END, AVG(likes) DESC;
+
+--4.Write a SELECT statement that properly joins topic and video tables and
+--then returns information on topic_id, topic name, average video size, total number of likes within each topic. 
+select
+    t.topic_id,
+    t.topic_name,
+    AVG(TO_NUMBER(ltrim(rtrim(REPLACE(video_size,SUBSTR(v.video_size, INSTR(v.video_size,'MB'),2)))))) as "Average_video_size",
+    sum(v.likes) as "total_likes"
+    from
+    topic t
+    left join video_topic_link vt on vt.topic_id = t.topic_id
+    left join video v 
+            on vt.video_id = v.video_id
+group by t.topic_id, t.topic_name;
+--ORDER BY CASE WHEN TRUNC(AVG(RTRIM(video_size,'MB' )),2) IS NULL THEN 1 ELSE 0 END, TRUNC(AVG(RTRIM(video_size,'MB' )),2) DESC;
+
+--4b.  Repeat problem 4 using window functions instead of GROUP BY.
+select
+    DISTINCT t.topic_id,
+    t.topic_name,
+    AVG(TO_NUMBER(ltrim(rtrim(REPLACE(video_size,SUBSTR(v.video_size, INSTR(v.video_size,'MB'),2)))))) OVER (PARTITION BY t.topic_id) as "Average_video_size",
+    sum(v.likes) OVER (PARTITION BY t.topic_id) as "total_likes"
+    from
+    topic t
+    left join video_topic_link vt on vt.topic_id = t.topic_id
+    left join video v 
+            on vt.video_id = v.video_id;
+--ORDER BY CASE WHEN ROUND(AVG(TO_NUMBER(ltrim(rtrim(REPLACE(video_size,SUBSTR(v.video_size, INSTR(v.video_size,'MB'),2)))))))
+--IS NULL THEN 1 ELSE 0 END, ROUND(AVG(TO_NUMBER(ltrim(rtrim(REPLACE(video_size,SUBSTR(v.video_size, INSTR(v.video_size,'MB'),2))))))) DESC;
+    
+
+
+--5.Write a statement that will return one row for each user that has a ContentCreator account 
+--and videos attached to the account and reports user first name, lst name, 
+--and a column called awards_earned that provides the number of awards earned on videos for each user.  
+--The formula to calculate awards is views minus the 100 baseline requirement and then divide the result by 5,000.  
+--Be sure to only show the awards earned as a whole number and do not round up 
+--(i.e. Videos that have earned 4.8 awards have only earned 4 awards).
+--Filter results to only show videos that have earned 10 or more awards.  Sort results by awards_earned largest to smallest and then last_name A-Z.
+
+SELECT FIRST_NAME , LAST_NAME , u.cc_flag, cc.user_id, v.video_id, trunc((v.VIEWS - 100)/5000) AS "AWARDS_EARNED"
+FROM user_table u 
+left join  content_creators cc on cc.user_id= u.user_id
+left join video v on v.cc_id = cc.cc_id
+WHERE trunc((v.VIEWS - 100)/5000) >10
+order by last_name, trunc((v.VIEWS - 100)/5000) DESC;
+--group by FIRST_NAME , LAST_NAME , u.cc_flag, cc.user_id, v.video_id
+
+
+--6.	Part A - Write a SELECT that creates a report to show the count of credit cards broken out by user first_name, city_billing and state_billing.  The report should include the following 
+--The first_name column from the user_table
+--The city_billing column from the CreditCard table
+---The state_billing column from the CreditCard table
+--The count of cart_id in the CreditCard table with an appropriate column alias
+--Filter data to show only records related to users with billing addresses in Texas and NY and sort by city.
+--Use the ROLLUP operator to include a row that gives the subtotal city_billing and state_billing
+SELECT count(cd.CONTENTCREATOR_ID) as Count_Cards, cd.CITY_BILLING,cd.STATE_BILLING, u.first_name
+from creditcard cd
+left JOIN content_creators cc on cc.cc_id=cd.CONTENTCREATOR_ID
+left join user_table u on u.user_id=cc.user_id
+where STATE_BILLING IN ('NY','TX')
+group by ROLLUP(CITY_BILLING,STATE_BILLING,first_name);
+
+
+--6B – Explain in a commented sentence how the CUBE operator is different than ROLLUP and why it is useful.
+--The CUBE operator, like the ROLLUP operator produces subtotals and grand totals as well. But unlike the ROLLUP 
+--operator it produces subtotals and grand totals for every permutation of the columns provided to the CUBE operator
+--The CUBE operator is similar in functionality to the ROLLUP operator; 
+--however, the CUBE operator can calculate subtotals and grand totals for all permutations of the columns specified in it.
+
+--7.Write a query that shows us the main billing address of each content creator and then returns the credit card ID 
+--and a flag (Y/N) specifying whether that credit card billing address matches the primary billing address for each content creator. 
+--You may choose to also return the credit card billing address if you wish. Return a row for each credit card listed.
+
+select cd.card_id AS "Cards", 
+cd.STREET_BILLING|| ' ' ||cd.CITY_BILLING|| ' ' ||cd.STATE_BILLING|| ' ' ||cd.ZIP_CODE_BILL as "CD_full_address", 
+cc.STREET_ADDRESS || ' ' ||cc.CITY|| ' ' ||cc.STATE|| ' ' ||cc.ZIP_CODE as "CC_full_address" ,
+CASE
+ WHEN (cd.STREET_BILLING|| ' ' ||cd.CITY_BILLING|| ' ' ||cd.STATE_BILLING|| ' ' ||cd.ZIP_CODE_BILL) = (cc.STREET_ADDRESS || ' ' ||cc.CITY|| ' ' ||cc.STATE|| ' ' ||cc.ZIP_CODE)
+ THEN 'Y'
+ ELSE 'N'
+END AS address_matches
+from creditcard cd
+left join content_creators cc on cc.cc_id=cd.CONTENTCREATOR_ID;
+
+--8.Write a SELECT statement that displays the cc_id and count of video_id for all the videos a content creator has made.  
+--In a 3rd column called unique_topics display the count of distinct topics for videos created by a certain user.  
+--Lastly only show results that have had at least 2 or more distinct topics.  Sort the by cc_id descending. 
+select DISTINCT count (distinct v.video_id) as "count of video_id", cc.cc_id, count (distinct t.topic_name) AS "uniquetopics"
+from content_creators cc
+left join video v on v.cc_id = cc.cc_id
+left JOIN video_topic_link vtl on vtl.video_id=v.video_id
+left JOIN topic t on t.topic_id = vtl.topic_id
+group by cc.cc_id 
+order by cc.cc_id DESC;
+
+--8b. Now write using window functions. Do not filter by number of distinct topics. 
+select DISTINCT  
+cc.cc_id,
+count (distinct v.video_id )OVER (PARTITION BY cc.cc_id) AS "Count_of_Video_IDs"
+--count ( t.topic_name) 
+from content_creators cc
+left join video v on v.cc_id = cc.cc_id
+left JOIN video_topic_link vtl on vtl.video_id=v.video_id
+left JOIN topic t on t.topic_id = vtl.topic_id
+order by cc.cc_id DESC;
+
+
+--9.Write a SELECT statement that returns the same result set as this SELECT statement, 
+--but don’t use a join in the main clause. Instead, use a subquery in a WHERE clause that uses the IN keyword.
+SELECT DISTINCT topic_name
+FROM topic t
+WHERE t.topic_name in ('memes', 'cool', 'SQL');
+
+--10.	Write a SELECT statement that answers this question: Which users have created a video that has greater than the average likes for all videos?
+--Return the user_id, video_id, and likes for each video.
+--Sort the results by the likes.
+SELECT  v.video_id, v.likes, cc.user_id
+FROM video v 
+LEFT JOIN content_creators cc ON cc.cc_id = v.cc_id
+WHERE v.likes > (SELECT AVG(likes) FROM video)
+order by v.likes DESC;
+--GROUP BY v.likes
+
+--11.	Real-World Business Scenario! The Marketing Team has asked us to pull together a target customer contact list that contains 
+--all the users who are signed up with Content Creator accounts but haven’t uploaded a video yet.  
+--Write a query that returns the first_name, last_name, email, CC_flag, and birthdate columns from the User_table. 
+--Return one row for each user that has never had a video on the Video table. 
+SELECT u.first_name, u.last_name,u.email,u.CC_flag,u.birthdate,u.user_id--,cc.cc_id,v.video_id
+FROM CONTENT_CREATORS cc
+LEFT JOIN user_table u ON cc.user_id = u.user_id
+LEFT join video v on cc.cc_id=v.cc_id
+WHERE video_id is null;
+
+--12.Write a SELECT statement that returns the title, subtitle, video_size, views, and the number of comments for 
+--videos that have at least two comments on them. We want you to use a subquery to do this! 
+--Sort the final results by the number of comments.
+SELECT DISTINCT v.TITLE, v.SUBTITLE, v.VIDEO_SIZE, V.VIEWS, COUNT(c.comment_body) as "totalcomments"
+FROM video v
+LEFT JOIN comments c ON v.video_id = c.video_id
+--WHERE totalcomments >= 2
+Group by v.TITLE, v.SUBTITLE, v.VIDEO_SIZE, V.VIEWS
+having  COUNT(c.comment_body)>=2
+order by COUNT(c.comment_body) ASC;
+
+--13.Write a query that returns user information (id, first and last name) along with the count of videos for each user. 
+--You must do this by utilizing a left join with the subquery as an inline view. Order final results by last_name.
+SELECT u.first_name, u.last_name,u.user_id,COUNT(v.cc_id) as "totalvideos"
+FROM CONTENT_CREATORS cc
+LEFT JOIN user_table u ON cc.user_id = u.user_id
+LEFT join video v on cc.cc_id=v.cc_id
+GROUP BY u.first_name, u.last_name,u.user_id
+ORDER BY last_name DESC;
+
+--13 BONUS! Obtain the same output by using the subquery in the WHERE clause (+2 points)
+SELECT cc.cc_id, cc.cc_username, totalvideos
+  FROM content_creators cc
+LEFT JOIN
+       ( SELECT v.cc_id, COUNT(v.cc_id) as totalvideos
+         FROM Video v
+         GROUP BY v.cc_id ) inlineview
+ ON cc.cc_id= inlineview.cc_id
+ORDER BY totalvideos;
+--14.	Using an inline view, write a statement that will return one row per content creator,
+--representing the most recent video that person has made. 
+--Each row should include these three columns: cc_id, username, and days_since_latest_upload. 
+
+SELECT cc.cc_id, cc.cc_username, days_since_latest_upload
+  FROM content_creators cc
+LEFT JOIN
+       ( SELECT v.cc_id, TRUNC(SYSDATE- MAX(v.upload_date)) AS days_since_latest_upload
+         FROM Video v
+         GROUP BY v.cc_id ) inlineview
+ ON cc.cc_id= inlineview.cc_id
+ORDER BY days_since_latest_upload
