@@ -1,0 +1,230 @@
+-- Dropping Tables and Sequences
+
+DROP TABLE Video_Link;
+DROP TABLE VideoComments;
+DROP TABLE Video;
+DROP TABLE CreditCard;
+DROP TABLE ContentCreator;
+DROP TABLE User_topic;
+DROP TABLE Topics;
+DROP TABLE Users;
+DROP SEQUENCE user_id_seq;
+DROP SEQUENCE content_id_seq;
+DROP SEQUENCE video_id_seq;
+DROP SEQUENCE card_id_seq;
+DROP SEQUENCE comment_id_seq;
+DROP SEQUENCE topic_id_seq;
+
+
+-- Creating Tables as per ERD
+
+CREATE TABLE Users (
+  User_ID NUMBER  ,
+  First_Name CHAR(10) CONSTRAINT First_Name NOT NULL,
+  Middle_Name CHAR(5),
+  Last_Name CHAR(20) CONSTRAINT Last_Name NOT NULL,
+  Username CHAR(20) CONSTRAINT username_users NOT NULL,
+  Birthdate  DATE CONSTRAINT Birthdate NOT NULL,
+  email_address VARCHAR2(40) CONSTRAINT email_address NOT NULL,
+  CDate DATE DEFAULT SYSDATE CONSTRAINT CDate NOT NULL,   --(this is how you get the current date)
+  CC_Flag  CHAR(2) DEFAULT 'NO' CONSTRAINT CC_Flag_User NOT NULL,
+  CONSTRAINT user_ID_pk PRIMARY KEY(User_ID),
+  CONSTRAINT email_length_check  CHECK(REGEXP_LIKE (email_address,'^[A-Za-z]+[A-Za-z0-9.]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}$')),
+  CONSTRAINT age_check_constraint  CHECK (CDate - Birthdate > 13)
+);
+
+
+CREATE TABLE Topics (
+  Topic_ID NUMBER ,
+  topic_Name CHAR(10) CONSTRAINT topic_Name NOT NULL,
+  topic_Description VARCHAR(100) CONSTRAINT topic_Description NOT NULL,
+  CONSTRAINT topic_id_pk PRIMARY KEY (Topic_ID)
+);
+
+
+CREATE TABLE User_Topic (
+  User_ID REFERENCES Users (User_ID),
+  Topic_ID REFERENCES Topics (Topic_ID),
+  CONSTRAINT user_topic_pk PRIMARY KEY (User_ID,Topic_ID)
+);
+
+
+CREATE TABLE ContentCreator (
+  CC_ID NUMBER,
+  User_ID NUMBER CONSTRAINT User_ID_cc NOT NULL,
+  Country CHAR(10) CONSTRAINT Country NOT NULL,
+  State CHAR(2) CONSTRAINT State_cc NOT NULL,
+  City CHAR(10) CONSTRAINT City_cc NOT NULL,
+  Phone CHAR(12)CONSTRAINT Phone_cc NOT NULL,
+  Subscription_Tier CHAR(10)CONSTRAINT Subscription_Tier_cc NOT NULL,
+  CONSTRAINT CC_ID_pk PRIMARY KEY(CC_ID)
+);
+
+CREATE TABLE Video (
+  Video_ID NUMBER NOT NULL ,
+  CC_ID NUMBER CONSTRAINT CC_ID_Video NOT NULL,
+  Title VARCHAR(100) CONSTRAINT title_video NOT NULL,
+  Subtitle VARCHAR(100) CONSTRAINT Subtitle_video NOT NULL,
+  date_uploaded DATE CONSTRAINT date_uploaded_video NOT NULL ,
+  length_Video CHAR(10)CONSTRAINT length_Video_key NOT NULL,
+  views NUMBER default 0,
+  Likes NUMBER default 0,
+  Revenues NUMBER default 0,
+  CONSTRAINT video_new_pk PRIMARY KEY (Video_ID),
+  CONSTRAINT cc_id_fk FOREIGN KEY (CC_ID) REFERENCES ContentCreator
+);
+
+CREATE TABLE VideoComments (
+  Comment_ID NUMBER,
+  Video_ID NUMBER CONSTRAINT Video_ID_comments NOT NULL,
+  User_ID NUMBER CONSTRAINT User_ID_comments NOT NULL,
+  Comment_Body VARCHAR(1000) CONSTRAINT Comment_Body_comments NOT NULL,
+  Comment_Time DATE CONSTRAINT Comment_Time_comments NOT NULL,
+  CONSTRAINT comment_pk PRIMARY KEY (Comment_ID),
+  CONSTRAINT  video_comments_fk FOREIGN KEY (Video_ID) REFERENCES  Video(Video_ID),
+  CONSTRAINT user_comments_fk FOREIGN KEY (User_ID) REFERENCES Users(User_ID)
+  
+);
+
+CREATE TABLE Video_Link(
+  Video_ID REFERENCES Video (Video_ID),
+  Topic_ID REFERENCES Topics (Topic_ID),
+  CONSTRAINT video_topic_pk PRIMARY KEY (Video_ID,Topic_ID)
+);
+
+
+
+CREATE TABLE CreditCard(
+  card_ID NUMBER,
+  CC_ID NUMBER CONSTRAINT CC_ID_card NOT NULL,
+  CardType VARCHAR(10)CONSTRAINT Card_Type NOT NULL,
+  CardNumber NUMBER NOT NULL,
+  Country_Card CHAR(10) NOT NULL,
+  State_Card CHAR(2) NOT NULL,
+  City_Card CHAR(10) NOT NULL,
+  street_card CHAR(10) NOT NULL,
+  Zip_card CHAR(5) NOT NULL,
+  ExperationDate DATE NOT NULL,
+  SecurityCode NUMBER NOT NULL,
+  CONSTRAINT card_id_pk PRIMARY KEY (card_ID),
+  CONSTRAINT cc_id_Credit_fk FOREIGN KEY (CC_ID) REFERENCES ContentCreator
+);
+
+-- Creating Sequences 
+
+CREATE SEQUENCE user_id_seq
+START WITH 1000000
+INCREMENT by 1;
+
+CREATE SEQUENCE content_id_seq
+START WITH 1000000
+INCREMENT by 1;
+
+
+CREATE SEQUENCE card_id_seq
+START WITH 1000000
+INCREMENT by 1;
+
+
+CREATE SEQUENCE topic_id_seq
+START WITH 1000
+INCREMENT by 1;
+
+
+CREATE SEQUENCE video_id_seq
+START WITH 1000
+INCREMENT by 1;
+
+
+CREATE SEQUENCE comment_id_seq
+START WITH 1000
+INCREMENT by 1;
+
+INSERT INTO Users(User_ID, First_Name,Middle_Name,Last_Name,Username,email_address,Birthdate,CC_Flag)
+            VALUES(user_id_seq.NEXTVAL, 'Mike', 'Don', 'Tyson','mty', 'mtyson@yahoo.com', TO_DATE('1989-01-11', 'YYYY-MM-DD'),'Y');
+
+INSERT INTO Users(User_ID, First_Name,Middle_Name,Last_Name,Username,email_address,Birthdate,CC_Flag)          
+            VALUES(user_id_seq.NEXTVAL, 'John', 'Gaby', 'Wick', 'jgw123','jwick@yahoo.com', TO_DATE('1990-10-21', 'YYYY-MM-DD'),'Y');
+
+INSERT INTO Users(User_ID, First_Name,Middle_Name,Last_Name,Username,email_address,Birthdate,CC_Flag)
+            VALUES(user_id_seq.NEXTVAL, 'Sam', 'Tom', 'Over','sto4', 'sover@yahoo.com', TO_DATE('1987-04-13', 'YYYY-MM-DD'),'Y');
+
+INSERT INTO Users(User_ID, First_Name,Middle_Name,Last_Name,Username,email_address,Birthdate,CC_Flag)         
+            VALUES(user_id_seq.NEXTVAL, 'Michael', 'Tim', 'Tyson','tim3', 'mtyson@yahoo.com', TO_DATE('1989-01-11', 'YYYY-MM-DD'),'Y');
+
+INSERT INTO Users(User_ID, First_Name,Middle_Name,Last_Name,Username,email_address,Birthdate,CC_Flag)
+            VALUES(user_id_seq.NEXTVAL, 'Vicky', NULL, 'Lemon', 'vl5','vlemon123@yahoo.com', TO_DATE('1978-08-09', 'YYYY-MM-DD'),'N');
+
+INSERT INTO Users(User_ID, First_Name,Middle_Name,Last_Name,Username,email_address,Birthdate,CC_Flag)           
+            VALUES(user_id_seq.NEXTVAL, 'David', NULL, 'Knoff', 'cooldude','dknoff@yahoo.com', TO_DATE('1993-05-19', 'YYYY-MM-DD'),'N');
+
+    
+
+INSERT INTO ContentCreator(CC_ID, User_ID,Country, State,City,Phone, Subscription_Tier)  
+            VALUES(content_id_seq.NEXTVAL,1000000,'USA','NY','Brook','5714421989','Business');
+
+INSERT INTO ContentCreator(CC_ID,User_ID,Country, State,City,Phone, Subscription_Tier)  
+            VALUES(content_id_seq.NEXTVAL,1000001,'USA','TX','Austin','5122442033','General');
+            
+INSERT INTO ContentCreator(CC_ID,User_ID,Country, State,City,Phone, Subscription_Tier)  
+            VALUES(content_id_seq.NEXTVAL,1000002,'USA','CA','Fremont','4108671239','Business');
+            
+            
+INSERT INTO ContentCreator(CC_ID,User_ID,Country, State,City,Phone, Subscription_Tier)  
+            VALUES(content_id_seq.NEXTVAL,1000003,'USA','WA','Kirkland','6104451898','General');
+
+
+
+INSERT INTO CreditCard(card_ID,CC_ID,CardType,CardNumber,Country_Card, State_Card,City_Card,Street_Card,Zip_Card,ExperationDate, SecurityCode)  
+            VALUES(card_id_seq.NEXTVAL,1000000,'Visa',4111111111111111,'USA','NY','Brook','mccoy','21043', TO_DATE('2021-12-22', 'YYYY-MM-DD'), '123');
+                
+INSERT INTO CreditCard(card_ID,CC_ID,CardType,CardNumber,Country_Card, State_Card,City_Card,Street_Card,Zip_Card,ExperationDate, SecurityCode)  
+            VALUES(card_id_seq.NEXTVAL,1000000,'MasterCard',4123114897672310,'USA','NY','Brook','mccoy','21043', TO_DATE('2022-05-09', 'YYYY-MM-DD'), '345');
+
+INSERT INTO CreditCard(card_ID,CC_ID,CardType,CardNumber,Country_Card, State_Card,City_Card,Street_Card,Zip_Card,ExperationDate, SecurityCode) 
+            VALUES(card_id_seq.NEXTVAL,1000001,'Visa', 4124114897672313,'USA','TX','Austin','palmito','41487', TO_DATE('2020-01-12', 'YYYY-MM-DD'), '456');
+
+INSERT INTO CreditCard(card_ID,CC_ID,CardType,CardNumber,Country_Card, State_Card,City_Card,Street_Card,Zip_Card,ExperationDate, SecurityCode)  
+            VALUES(card_id_seq.NEXTVAL,1000002,'Visa',4128114897672311,'USA','CA','Fremont','gage','10330', TO_DATE('2022-03-01', 'YYYY-MM-DD'), '678');
+            
+INSERT INTO CreditCard(card_ID,CC_ID,CardType,CardNumber,Country_Card, State_Card,City_Card,Street_Card,Zip_Card,ExperationDate, SecurityCode) 
+            VALUES(card_id_seq.NEXTVAL,1000003,'MasterCard',4128294824672311,'USA','WA','Kirkland','spade', '78778', TO_DATE('2023-03-30', 'YYYY-MM-DD'), '789');
+
+INSERT INTO Video(Video_ID, CC_ID, Title, Subtitle, date_uploaded, length_Video, views, Likes, Revenues) 
+            VALUES(video_id_seq.NEXTVAL,1000000,'How to Score As in Exams','Spanish',TO_DATE('2020-09-20 10-15-20', 'YYYY-MM-DD HH:MI:SS'),'20',DEFAULT,DEFAULT, '0');
+
+INSERT INTO Video(Video_ID, CC_ID, Title, Subtitle, date_uploaded, length_Video, views, Likes, Revenues) 
+            VALUES(video_id_seq.NEXTVAL,1000001,'Logistics of Navy Operations','Hindi',TO_DATE('2019-10-22 10-15-20', 'YYYY-MM-DD HH:MI:SS'),'60','100000','10000','50000');
+
+INSERT INTO Video(Video_ID, CC_ID, Title, Subtitle, date_uploaded, length_Video, views, Likes, Revenues) 
+            VALUES(video_id_seq.NEXTVAL,1000002,'Investment Banking','Spanish',TO_DATE('2009-05-01 10-15-20', 'YYYY-MM-DD HH:MI:SS'),'40','30000','20000', '6000');
+
+INSERT INTO Video(Video_ID, CC_ID, Title, Subtitle, date_uploaded, length_Video, views, Likes, Revenues) 
+            VALUES(video_id_seq.NEXTVAL,1000003,'Festivals in India','Marathi',TO_DATE('2001-01-15 10-15-20', 'YYYY-MM-DD HH:MI:SS'),'50','20000','2000', '500');
+ 
+
+INSERT INTO Video(Video_ID, CC_ID, Title, Subtitle, date_uploaded, length_Video, views, Likes, Revenues) 
+            VALUES(video_id_seq.NEXTVAL,1000003,'Festivals in India','Marathi',TO_DATE('2001-01-15 10-15-20', 'YYYY-MM-DD HH:MI:SS'),'50','20000','2000', '500');
+  
+INSERT INTO VideoComments(Comment_ID, Video_ID, User_ID, Comment_Body, Comment_Time) 
+            VALUES(comment_id_seq.NEXTVAL,1000,1000002,'Colorful India :)',TO_DATE('2001-01-15 10-17-20', 'RRRR-MM-DD HH:MI:SS'));
+            
+
+INSERT INTO VideoComments(Comment_ID, Video_ID, User_ID, Comment_Body, Comment_Time) 
+            VALUES(comment_id_seq.NEXTVAL,1000,1000003,'Colorful India :)',TO_DATE('2001-01-15 10-17-20', 'YYYY-MM-DD HH24:MI:SS'));
+
+INSERT INTO VideoComments(Comment_ID, Video_ID, User_ID, Comment_Body, Comment_Time) 
+            VALUES(comment_id_seq.NEXTVAL,1001,1000002,'I love Festivals in India :)',TO_DATE('2001-01-15 10-17-20', 'YYYY-MM-DD HH:MI:SS'));
+            
+INSERT INTO VideoComments(Comment_ID, Video_ID, User_ID, Comment_Body, Comment_Time) 
+            VALUES(comment_id_seq.NEXTVAL,1001,1000003,'Beautiful India :)',TO_DATE('2001-01-15 10-17-20', 'YYYY-MM-DD HH:MI:SS'));   
+            
+
+
+
+--Creating indexes for video link and user topic
+ 
+CREATE INDEX video_topic_ix ON  Video_link(Video_ID); 
+CREATE INDEX usertopic_ix  ON  User_Topic(Topic_ID);
+
+  
