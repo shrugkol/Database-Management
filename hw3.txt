@@ -1,0 +1,221 @@
+--1.Write a SELECT statement that returns following columns from the User table: first_name, last_name, email, birthdate. 
+--Then, run this statement to make sure it works correctly.
+--Add an ORDER BY clause to this statement that sorts the result set by last name in ascending order. 
+--Then, run this statement again to make sure it works correctly. This is a good way to build and test a statement, one clause at a time.
+
+
+SELECT first_name, last_name, email, birthdate
+        FROM user_table
+ORDER BY last_name ASC ;
+
+
+--2.Write a SELECT statement that returns one column from the User table named user_full_name that combines the first_name and last_name columns.
+--Format this column with the first name, a space, and last name like this:
+--John Doe
+--Sort the result set by first name in descending sequence.
+--Return only the users whose last name begins with letters of K, L, and M.
+
+SELECT first_name, last_name
+        FROM user_table
+ORDER BY last_name ASC ;
+
+SELECT first_name, last_name AS "user_full_name" 
+FROM user_table WHERE last_name LIKE '%K%' 
+Union
+SELECT first_name, last_name AS "user_full_name"
+FROM user_table WHERE last_name LIKE '%L%' 
+Union
+SELECT first_name, last_name AS "user_full_name"
+FROM user_table WHERE last_name LIKE '%M%' 
+ORDER BY first_name DESC;
+
+
+--3.Write a SELECT statement that returns these columns from the Video table:
+--title, subtitle, upload_date, views, and likes. 
+--Return only the rows with an upload date between the beginning of this year and last week 
+--(i.e. between ’01-Jan-20’ and the date one week before this assignment is due). 
+--Use the BETWEEN operator. 
+--Sort the result set in descending sequence by the upload_date column. 
+ 
+select title, subtitle, upload_date, views, likes
+from video
+WHERE upload_date BETWEEN '01-Jan-20' AND SYSDATE
+ORDER BY upload_date DESC;
+
+--4.	Create a duplicate of the previous query but this time update the WHERE clause to use only the following operators 
+--(<, >, <=, or >=). 
+--Keep the rest of the query the same.
+
+select title, subtitle, upload_date, views, likes
+from video
+WHERE upload_date >= '01-Jan-20' and  upload_date <= SYSDATE
+ORDER BY upload_date DESC;
+
+--5.	Write a SELECT statement that returns these column names and data from the Video table:	
+---video_id		The video_id column
+--video_size	The video_size column but with a column alias of video_size_MB
+--likes	The likes column with a column alias of Likes_Earned
+--video_length	The video_length column with a column alias of video_length_sec
+--video_length_min	The is a calculated column based on the logic below*.
+--*Divide the video_length (currently in seconds) by the number of seconds in a minute to find video length in minutes.
+--Use the ROWNUM pseudo column so the result set contains only the first 3 rows from the table.
+--Sort the result set by the column alias Likes_Earned in descending order.
+--NOTE: You should return only one decimal place for video_length_min. 
+--You could use ROUND but for this column we would prefer truncating (i.e. remove decimal) to see how many minutes are required at a minimum to watch most of the video. 
+
+ SELECT video_id, v.video_size as video_size_MB,
+likes,v.likes as Likes_Earned, 
+video_length, v.video_length as video_length_sec,
+video_length,  trunc((v.video_length/60),1) as video_length_min
+ FROM Video v
+ORDER BY Likes_Earned DESC;
+
+--6.Now copy the above statement, but adjust it to answer the following question:
+--Which videos (by video name) have the highest number of likes and are at least 6 minutes long?
+--Remove all non-relevant columns from your query. 
+ 
+SELECT v.likes as Likes_Earned,
+trunc((v.video_length/60),1) as video_length_min
+FROM Video v 
+WHERE trunc((v.video_length/60),1) >6 
+ORDER BY Likes_Earned DESC ;
+
+
+--7.	Write a SELECT statement that returns these column names and data from the video  table:			
+--cc_id			The cc_id column
+--video_id		The video_id column
+--Popularity 		The likes column but with a column alias
+--Awards			The likes column calculated as described below (ideally would be truncated)
+--Post_date		The upload_date column but with a column alias
+--Only return rows with where the video has earned more than 10 awards. An award is earned every 5000 likes that accrued
+
+SELECT cc_id, video_id, v.likes as Popularity, v.upload_date as Post_date,
+trunc(v.likes/5000) as Awards
+FROM Video v 
+WHERE trunc(v.likes/5000) > 10;
+
+--8.Now write a query that shows the above information and includes the full name of the user that created these videos. 
+--Do not return any column except the full user name
+--SELECT cc_id, video_id, v.likes as Popularity, v.upload_date as Post_date ,
+
+SELECT U.FIRST_NAME || ' ' || u.last_name AS "Full name"
+--trunc(v.likes/5000) as Awards
+FROM Video v  
+JOIN USER_TABLE u
+ON V.CC_id= U.USER_ID
+WHERE trunc(v.likes/5000) > 10;
+
+--9.	Write a SELECT statement that uses the SYSDATE function to create a row with these columns:
+--today_unformatted	The SYSDATE function unformatted
+--today_formatted	The SYSDATE function in this format: MM/DD/YYYY
+--This displays a number for the month, a number for the day, and a four-digit year. 
+--Use a FROM clause that specifies the Dual table. 
+--Hint: You will need to implement the TO_CHAR function to format the sysdate in the format designated above.
+--After you write this add the following columns to the row:
+--likes	1000
+--pay_per_like	.0325
+--pay_per_video	10
+--pay_sum	The likes multiplied by the pay_per_like
+--video_total	The pay per video plus the pay_sum
+--Your result table contains only one row.
+
+SELECT TO_CHAR
+    (SYSDATE, 'MM-DD-YYYY') "today_formatted" ,(SYSDATE) "today_unformatted",
+    ('1000')"Likes",('0.0325')"pay_per_like", ('10')"pay_per_video",('32.5')"pay_sum",('42.5')"video_total"
+     FROM DUAL;
+     
+--10.Now return a table that shows these pay columns for the videos in the video table.
+--Include upload date and format as MM/DD/YYYY. 
+--Show the videos that earn the most revenue first. 
+
+SELECT TO_CHAR(upload_date,'MM/DD/YYYY') AS upload_date, likes, pay_per_like, pay_per_video, 
+likes*pay_per_like AS pay_sum,pay_per_video + (likes*pay_per_like) AS video_total
+FROM video, (SELECT .0325 AS pay_per_like, 10 AS pay_per_video FROM Dual);
+
+
+--11.Write a SELECT statement that returns the first and last name of users, their birthdate, 
+--their status, and the comments they have made.
+--We want to see the longest comments first.  
+SELECT first_name, last_name,birthdate, comment_body
+        FROM user_table, comments
+ORDER BY comment_body DESC ; 
+
+--12.Write a SELECT statement that pulls the user and their topic subscription info. 
+--Then display the following columns from the results:
+--user_id			The user_id column 
+--user_name		A concatenation of user first and last names. 
+--topic_id		The topic_id column
+--topic_name		The topic_name column
+--Return on the subscription details for the user(s) subscribed to the “SQL” topic. 
+
+SELECT u.user_id, U.FIRST_NAME || ' ' || u.last_name AS "user_name",
+t.topic_id  AS " topic_id ", t.topic_name as " topic_name "
+FROM USER_TABLE u, TOPIC t
+WHERE t.topic_name='SQL';
+
+--13.Write a SELECT statement that joins the appropriate tables in order to show video title, subtitle, user first_name, last_name 
+-- whether the CC_Flag is checked or not, and comment_body. 
+--Pull this for only video_id 100000 and then sort by last_name and first_name.
+--Your results look like something like this (for a different video): 
+
+SELECT  v.title as "video title", v.subtitle as" video subtitle",U.FIRST_NAME, u.last_name, u.cc_flag, c.comment_body
+--trunc(v.likes/5000) as Awards
+FROM Video v  ,USER_TABLE u, comments c
+where v.video_id=100000
+Order by  u.FIRST_NAME,u.last_name ASC;
+
+--14.	Write a SELECT statement that pulls the distinct first name, last_name, 
+--and email for users that have not commented on a video yet. 
+--Use a left outer join to accomplish this to show you understand how to properly use them. 
+--Sort them by last name.
+
+SELECT DISTINCT u.first_name, u.last_name, u.email,c.comment_body
+FROM USER_TABLE u
+LEFT OUTER JOIN comments c
+ON u.user_id= c.comment_id
+order by u.last_name ASC;
+
+--15.	Use the UNION operator to generate a result set consisting of three columns from the Video table: 
+--video_tier	A calculated column that contains a value of ‘1-Top-Tier’, ‘2-Mid-Tier’, or ‘3-Low-Tier’ 
+--video_id	The video_id column
+--revenue	The revenue column 
+--views	The views column
+--If the video has at least 30000 views, the video_tier column should contain a literal string value of ‘1-Top-Tier’. 
+--If the video has between 20000 views and 30000 views the video_tier should contain a literal string value of ‘2-Mid-Tier’. 
+--Otherwise, it should contain a value of ‘3-Low-Tier’ 
+--Sort the final result set by revenue descending.  
+
+SELECT '1-Top-Tier' AS video_tier, video_id, revenue,views
+   FROM video
+   WHERE views > 30000
+UNION
+    SELECT '2-Mid-Tier' AS video_tier, video_id, revenue,views  
+    FROM video
+    WHERE views >= 20000 and  views <= 30000
+UNION
+   SELECT '3-Low-Tier' AS video_tier, video_id, revenue,views  
+    FROM video
+    WHERE views  < 20000 
+ORDER BY revenue DESC;
+
+--16.	Write a SELECT statement to identify the most successful content creator (cc_username) in terms of revenue. 
+--Is that the same person that is most successful in terms of rewards?
+
+SELECT cc.user_id, v.revenue,cc.cc_username,v.likes as rewards
+FROM content_creators cc
+LEFT OUTER JOIN video v
+ON cc.cc_id= v.cc_id
+ORDER BY CASE WHEN revenue IS NULL THEN 1 ELSE 0 END, revenue DESC;
+--select* from video
+
+--17.Show the distinct different card types that each content creator has with their first and last name
+
+SELECT DISTINCT u.first_name,u.last_name, cc.user_id,cd.CARD_TYPE,cc.cc_id
+FROM user_table u
+LEFT OUTER JOIN content_creators cc 
+ON cc.user_id= u.user_id
+LEFT OUTER JOIN content_creators cc 
+ON cc.user_id= u.user_id
+LEFT OUTER JOIN creditcard cd 
+ON cc.cc_id =cd.CONTENTCREATOR_ID
+ORDER BY CASE WHEN CARD_TYPE IS NULL THEN 1 ELSE 0 END, CARD_TYPE DESC;
